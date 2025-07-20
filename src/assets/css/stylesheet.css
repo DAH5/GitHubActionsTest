@@ -1,0 +1,38 @@
+html,
+body
+{
+    font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, "Helvetica Neue", Arial, sans-serif;
+    background-color: #242628;
+    color: #ffffff;
+    text-align: center;
+}
+
+body
+{
+    max-width: 1200px;
+    margin: auto;
+    padding: 4rem 1rem;
+}
+
+h3
+{
+    font-size: 1.5rem;
+    color: #ff9e40;
+    font-weight: 600;
+}
+
+h1
+{
+    font-size: 3rem;
+    font-weight: 600;
+}
+
+p
+{
+    font-size: 1.5rem;
+}
+
+a
+{
+    color: #ff9e40;
+}
