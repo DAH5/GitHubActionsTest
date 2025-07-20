@@ -28,3 +28,54 @@ jobs:
         run: wrangler pages deploy public/ --project-name=github-actions-test --branch master
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      
+      - name: Install s3cmd
+        run: sudo apt-get install -y s3cmd
+
+      - name: Configure s3cmd for Katapult
+        run: |
+          cat > ~/.mime.types <<EOF
+          text/html       html htm
+          text/css        css
+          application/javascript js
+          application/json json
+          image/svg+xml   svg
+          EOF
+
+          cat > ~/.s3cfg <<EOF
+          [default]
+          access_key = ${{ secrets.KATAPULT_ACCESS_KEY }}
+          secret_key = ${{ secrets.KATAPULT_SECRET_KEY }}
+          host_base = uk-lon-1.katapultobjects.com
+          host_bucket = %(bucket)s.uk-lon-1.katapultobjects.com
+          bucket_location = uk-lon-1
+          signature_v2 = True
+          use_https = True
+          mime_types = /home/runner/.mime.types
+          EOF
+
+      - name: Upload files to Katapult with correct MIME types
+        run: |
+          # Map extensions to MIME types
+          declare -A mime_types=(
+            [html]="text/html"
+            [css]="text/css"
+            [js]="application/javascript"
+            [json]="application/json"
+            [svg]="image/svg+xml"
+            [txt]="text/plain"
+          )
+
+          find public -type f | while read filepath; do
+            ext="${filepath##*.}"
+            mime="${mime_types[$ext]}"
+            s3path="${filepath#public/}"
+
+            if [ -n "$mime" ]; then
+              echo "Uploading $filepath as $mime"
+              s3cmd put --mime-type=$mime "$filepath" "s3://github-actions-test/$s3path" --acl-public
+            else
+              echo "Uploading $filepath with default mime"
+              s3cmd put "$filepath" "s3://github-actions-test/$s3path" --acl-public
+            fi
+          done
