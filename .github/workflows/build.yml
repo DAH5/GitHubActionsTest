@@ -56,24 +56,26 @@ jobs:
 
       - name: Upload files to Katapult with correct MIME types
         run: |
-          # Map extensions to MIME types
-          declare -A mime_types=(
-            [html]="text/html"
-            [css]="text/css"
-            [js]="application/javascript"
-            [json]="application/json"
-            [svg]="image/svg+xml"
-            [txt]="text/plain"
-          )
+          # Build extension-to-MIME map from .mime.types
+          declare -A mime_map
+          while read -r line; do
+            [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue  # Skip comments/blanks
+            mime="${line%%[[:space:]]*}"
+            extensions="${line#"$mime"}"
+            for ext in $extensions; do
+              mime_map[$ext]=$mime
+            done
+          done < ~/.mime.types
 
+          # Upload files using detected MIME types
           find public -type f | while read filepath; do
             ext="${filepath##*.}"
-            mime="${mime_types[$ext]}"
+            mime="${mime_map[$ext]}"
             s3path="${filepath#public/}"
 
             if [ -n "$mime" ]; then
               echo "Uploading $filepath as $mime"
-              s3cmd put --mime-type=$mime "$filepath" "s3://github-actions-test/$s3path" --acl-public
+              s3cmd put --mime-type="$mime" "$filepath" "s3://github-actions-test/$s3path" --acl-public
             else
               echo "Uploading $filepath with default mime"
               s3cmd put "$filepath" "s3://github-actions-test/$s3path" --acl-public
